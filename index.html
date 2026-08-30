@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FOMO Sniper — Control Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d10;
+    --surface: #14171c;
+    --surface-2: #1a1e24;
+    --border: #22262d;
+    --text: #e7eaee;
+    --text-muted: #8b93a1;
+    --accent-live: #57d9c4;
+    --accent-buy: #6fcf97;
+    --accent-risk: #f0a85a;
+    --accent-danger: #e8637a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, #101317 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  h1, h2, .mono-label { font-family: 'Space Grotesk', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
+  .brand .sub { color: var(--text-muted); font-size: 12px; }
+
+  .pulse-wrap { position: relative; width: 14px; height: 14px; }
+  .pulse-dot { width: 8px; height: 8px; background: var(--accent-live); border-radius: 50%; position: absolute; top: 3px; left: 3px; }
+  .pulse-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 1.5px solid var(--accent-live);
+    animation: pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-ring { animation: none; opacity: 0.4; }
+  }
+
+  .mode-pill {
+    font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .mode-paper { background: rgba(87,217,196,0.12); color: var(--accent-live); border: 1px solid rgba(87,217,196,0.35); }
+  .mode-live { background: rgba(232,99,122,0.12); color: var(--accent-danger); border: 1px solid rgba(232,99,122,0.4); }
+
+  main { padding: 24px 28px 60px; max-width: 1200px; margin: 0 auto; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .stat-card .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .stat-card .value { font-size: 24px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .value.positive { color: var(--accent-buy); }
+  .value.negative { color: var(--accent-danger); }
+
+  .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+  @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .panel-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .panel-body { padding: 6px; max-height: 460px; overflow-y: auto; }
+
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 8px; }
+  .row:hover { background: var(--surface-2); }
+  .row + .row { border-top: 1px solid var(--border); }
+  .row-main .symbol { font-weight: 600; }
+  .row-main .mint { color: var(--text-muted); font-size: 11px; }
+  .row-right { text-align: right; }
+  .pnl { font-weight: 600; }
+
+  .score-bar { width: 60px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+  .score-fill { height: 100%; }
+
+  .alert-item { padding: 12px 14px; font-size: 13px; border-top: 1px solid var(--border); }
+  .alert-item:first-child { border-top: none; }
+  .alert-item .type { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .empty { color: var(--text-muted); padding: 30px 14px; text-align: center; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="pulse-wrap"><div class="pulse-ring"></div><div class="pulse-dot"></div></div>
+    <div>
+      <h1>FOMO Sniper — Control Room</h1>
+      <div class="sub">Scanning for new launches</div>
+    </div>
+  </div>
+  <div id="mode-pill" class="mode-pill mode-paper">Paper Trading</div>
+</header>
+
+<main>
+  <section class="stats-row" id="stats-row"></section>
+
+  <section class="grid-2">
+    <div class="panel">
+      <div class="panel-header">Open Positions</div>
+      <div class="panel-body" id="open-positions"><div class="empty">Waiting for data…</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">Recent Alerts</div>
+      <div class="panel-body" id="alerts"><div class="empty">Waiting for data…</div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  function fmtSol(n) { return (n ?? 0).toFixed(4) + ' SOL'; }
+  function scoreColor(score, invert) {
+    const s = invert ? 100 - score : score;
+    if (s >= 66) return 'var(--accent-buy)';
+    if (s >= 33) return 'var(--accent-risk)';
+    return 'var(--accent-danger)';
+  }
+
+  function render(data) {
+    const s = data.stats;
+    document.getElementById('mode-pill').textContent = s.liveTradingEnabled ? 'Live Trading' : 'Paper Trading';
+    document.getElementById('mode-pill').className = 'mode-pill ' + (s.liveTradingEnabled ? 'mode-live' : 'mode-paper');
+
+    document.getElementById('stats-row').innerHTML = `
+      <div class="stat-card"><div class="label">Open Positions</div><div class="value">${s.openPositions}</div></div>
+      <div class="stat-card"><div class="label">Total PnL</div><div class="value ${s.totalPnlSol >= 0 ? 'positive' : 'negative'}">${fmtSol(s.totalPnlSol)}</div></div>
+      <div class="stat-card"><div class="label">Win Rate</div><div class="value">${Math.round((s.winRate ?? 0) * 100)}%</div></div>
+      <div class="stat-card"><div class="label">Closed Trades</div><div class="value">${s.closedTrades}</div></div>
+    `;
+
+    const openEl = document.getElementById('open-positions');
+    openEl.innerHTML = data.openTrades.length ? data.openTrades.map(t => `
+      <div class="row">
+        <div class="row-main">
+          <div class="symbol">${t.symbol ?? t.mint.slice(0,6)}</div>
+          <div class="mint mono">${t.mint.slice(0,4)}…${t.mint.slice(-4)} · ${t.mode}</div>
+        </div>
+        <div class="row-right">
+          <div class="pnl mono ${t.realizedPnlSol >= 0 ? 'positive' : 'negative'}" style="color:${t.realizedPnlSol >= 0 ? 'var(--accent-buy)' : 'var(--accent-danger)'}">${fmtSol(t.realizedPnlSol)}</div>
+          <div class="mono" style="font-size:11px;color:var(--text-muted)">${t.remainingPct}% held</div>
+        </div>
+      </div>
+    `).join('') : '<div class="empty">No open positions</div>';
+
+    const alertsEl = document.getElementById('alerts');
+    alertsEl.innerHTML = data.alerts.length ? data.alerts.map(a => `
+      <div class="alert-item">
+        <div class="type">${a.type.replace('_',' ')} ${a.symbol ? '· ' + a.symbol : ''}</div>
+        <div>${a.message.replace(/[*_`]/g, '')}</div>
+      </div>
+    `).join('') : '<div class="empty">No alerts yet</div>';
+  }
+
+  async function loadSnapshot() {
+    try {
+      const res = await fetch('/api/snapshot');
+      render(await res.json());
+    } catch (e) { console.error('Failed to load snapshot', e); }
+  }
+
+  loadSnapshot();
+
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'snapshot') render(msg.data);
+  };
+  ws.onerror = () => console.warn('WebSocket unavailable — falling back to periodic polling');
+  setInterval(loadSnapshot, 15000);
+</script>
+
+</body>
+</html>

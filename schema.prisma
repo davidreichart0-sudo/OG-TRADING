@@ -1,0 +1,135 @@
+// Prisma schema — PostgreSQL
+// Run `npm run prisma:migrate` after editing this file.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// A token the bot has analyzed at least once. Re-analysis overwrites the
+// score fields but TokenSnapshot keeps history for growth-rate calculations.
+model Token {
+  id                String   @id @default(cuid())
+  mint              String   @unique
+  symbol            String?
+  name              String?
+  poolAddress       String?
+  createdAt         DateTime @default(now())
+  firstSeenAt       DateTime @default(now())
+
+  riskScore         Int?     // 0 (safe) – 100 (max risk)
+  riskFactors        Json?    // breakdown array, see analysis/riskEngine.ts
+  socialScore       Int?     // 0 – 100
+  liquiditySol      Float?
+  holderCount       Int?
+  mintAuthorityRevoked   Boolean?
+  freezeAuthorityRevoked Boolean?
+  lpBurned          Boolean?
+  honeypotSuspected Boolean?
+
+  trades            Trade[]
+  snapshots         TokenSnapshot[]
+  alerts            Alert[]
+
+  @@index([mint])
+}
+
+// Periodic snapshot used to compute growth rates (holders, social, liquidity
+// over time) instead of only ever seeing a single point-in-time value.
+model TokenSnapshot {
+  id            String   @id @default(cuid())
+  tokenId       String
+  token         Token    @relation(fields: [tokenId], references: [id])
+  takenAt       DateTime @default(now())
+  holderCount   Int?
+  liquiditySol  Float?
+  telegramMembers Int?
+  twitterMentions Int?
+  priceSol      Float?
+
+  @@index([tokenId, takenAt])
+}
+
+enum TradeMode {
+  PAPER
+  LIVE
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  FAILED
+}
+
+model Trade {
+  id              String      @id @default(cuid())
+  tokenId         String
+  token           Token       @relation(fields: [tokenId], references: [id])
+  mode            TradeMode
+  status          TradeStatus @default(OPEN)
+
+  entrySol        Float       // SOL spent on entry
+  entryPriceSol   Float
+  entryTxSig      String?
+  remainingPct    Float       @default(100) // % of original position still held
+
+  realizedPnlSol  Float       @default(0)
+  exitReason      String?     // "take_profit" | "trailing_stop" | "stop_loss" | "risk_exit" | "manual"
+
+  openedAt        DateTime    @default(now())
+  closedAt        DateTime?
+
+  events          TradeEvent[]
+
+  @@index([tokenId, status])
+}
+
+// Individual partial sells / trailing-stop adjustments within one trade.
+model TradeEvent {
+  id          String   @id @default(cuid())
+  tradeId     String
+  trade       Trade    @relation(fields: [tradeId], references: [id])
+  kind        String   // "partial_take_profit" | "trailing_stop_update" | "full_exit"
+  pctSold     Float?
+  priceSol    Float?
+  pnlSol      Float?
+  txSig       String?
+  createdAt   DateTime @default(now())
+}
+
+model SmartWallet {
+  id              String   @id @default(cuid())
+  address         String   @unique
+  label           String?
+  totalTrades     Int      @default(0)
+  wins            Int      @default(0)
+  winRate         Float    @default(0)
+  avgHoldTimeSec  Int?
+  lastEvaluatedAt DateTime?
+  isActive        Boolean  @default(true)
+
+  @@index([address])
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  tokenId   String?
+  token     Token?   @relation(fields: [tokenId], references: [id])
+  type      String   // "new_buy" | "take_profit" | "risk_detected" | "whale_move"
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+// Simple key/value store for runtime-adjustable settings (e.g. risk
+// thresholds tuned live via the MCP server) without needing a redeploy.
+model RuntimeConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
