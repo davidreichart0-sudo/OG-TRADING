@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "build": "tsc",
     "mcp": "tsx src/mcp/server.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
