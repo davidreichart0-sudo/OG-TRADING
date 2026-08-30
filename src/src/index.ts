@@ -10,7 +10,6 @@ import { refreshSmartWalletScores } from "./analysis/smartMoney.js";
 import { startApiServer } from "./api/server.js";
 
 const log = childLogger("main");
-
 function printStartupBanner() {
   const mode = config.trading.liveTradingEnabled ? "🔴 LIVE TRADING" : "🟡 PAPER TRADING";
   // eslint-disable-next-line no-console
